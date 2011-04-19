@@ -11,12 +11,15 @@ import time
 import os
 import sys
 import traceback
+import warnings
 
 from django import template
 from django.template import base as template_base
 from django.core import urlresolvers
 from django.template import loader
 from django.template.loaders import app_directories, filesystem, cached
+from django.test.utils import get_warnings_state, restore_warnings_state,\
+    setup_test_template_loader, restore_template_loaders
 from django.utils import unittest
 from django.utils.translation import activate, deactivate, ugettext as _
 from django.utils.safestring import mark_safe
@@ -137,6 +140,10 @@ class UTF8Class:
 
 class Templates(unittest.TestCase):
     def setUp(self):
+        self._warnings_state = get_warnings_state()
+        warnings.filterwarnings('ignore', category=DeprecationWarning,
+                                module='django.template.defaulttags')
+
         self.old_static_url = settings.STATIC_URL
         self.old_media_url = settings.MEDIA_URL
         settings.STATIC_URL = u"/static/"
@@ -145,6 +152,7 @@ class Templates(unittest.TestCase):
     def tearDown(self):
         settings.STATIC_URL = self.old_static_url
         settings.MEDIA_URL = self.old_media_url
+        restore_warnings_state(self._warnings_state)
 
     def test_loaders_security(self):
         ad_loader = app_directories.Loader()
@@ -237,6 +245,38 @@ class Templates(unittest.TestCase):
             loader.template_source_loaders = old_loaders
             settings.TEMPLATE_DEBUG = old_td
 
+
+    def test_include_missing_template(self):
+        """
+        Tests that the correct template is identified as not existing
+        when {% include %} specifies a template that does not exist.
+        """
+
+        # TEMPLATE_DEBUG must be true, otherwise the exception raised
+        # during {% include %} processing will be suppressed.
+        old_td, settings.TEMPLATE_DEBUG = settings.TEMPLATE_DEBUG, True
+        old_loaders = loader.template_source_loaders
+
+        try:
+            # Test the base loader class via the app loader. load_template
+            # from base is used by all shipped loaders excepting cached,
+            # which has its own test.
+            loader.template_source_loaders = (app_directories.Loader(),)
+
+            load_name = 'test_include_error.html'
+            r = None
+            try:
+                tmpl = loader.select_template([load_name])
+                r = tmpl.render(template.Context({}))
+            except template.TemplateDoesNotExist, e:
+                settings.TEMPLATE_DEBUG = old_td
+                self.assertEqual(e.args[0], 'missing.html')
+            self.assertEqual(r, None, 'Template rendering unexpectedly succeeded, produced: ->%r<-' % r)
+        finally:
+            loader.template_source_loaders = old_loaders
+            settings.TEMPLATE_DEBUG = old_td
+
+
     def test_extends_include_missing_baseloader(self):
         """
         Tests that the correct template is identified as not existing
@@ -327,7 +367,7 @@ class Templates(unittest.TestCase):
         except TemplateSyntaxError, e:
             # Assert that we are getting the template syntax error and not the
             # string encoding error.
-            self.assertEquals(e.args[0], "Caught NoReverseMatch while rendering: Reverse for 'will_not_match' with arguments '()' and keyword arguments '{}' not found.")
+            self.assertEqual(e.args[0], "Caught NoReverseMatch while rendering: Reverse for 'will_not_match' with arguments '()' and keyword arguments '{}' not found.")
 
         settings.SETTINGS_MODULE = old_settings_module
         settings.TEMPLATE_DEBUG = old_template_debug
@@ -338,7 +378,7 @@ class Templates(unittest.TestCase):
         try:
             t = Template("{% if 1 %}lala{% endblock %}{% endif %}")
         except TemplateSyntaxError, e:
-            self.assertEquals(e.args[0], "Invalid block tag: 'endblock', expected 'else' or 'endif'")
+            self.assertEqual(e.args[0], "Invalid block tag: 'endblock', expected 'else' or 'endif'")
 
     def test_templates(self):
         template_tests = self.get_template_tests()
@@ -351,19 +391,10 @@ class Templates(unittest.TestCase):
 
         template_tests.update(filter_tests)
 
-        # Register our custom template loader.
-        def test_template_loader(template_name, template_dirs=None):
-            "A custom template loader that loads the unit-test templates."
-            try:
-                return (template_tests[template_name][0] , "test:%s" % template_name)
-            except KeyError:
-                raise template.TemplateDoesNotExist, template_name
-
-        cache_loader = cached.Loader(('test_template_loader',))
-        cache_loader._cached_loaders = (test_template_loader,)
-
-        old_template_loaders = loader.template_source_loaders
-        loader.template_source_loaders = [cache_loader]
+        cache_loader = setup_test_template_loader(
+            dict([(name, t[0]) for name, t in template_tests.iteritems()]),
+            use_cached_loader=True,
+        )
 
         failures = []
         tests = template_tests.items()
@@ -451,7 +482,7 @@ class Templates(unittest.TestCase):
                 expected_invalid_str = 'INVALID'
                 template_base.invalid_var_format_string = False
 
-        loader.template_source_loaders = old_template_loaders
+        restore_template_loaders()
         deactivate()
         settings.TEMPLATE_DEBUG = old_td
         settings.TEMPLATE_STRING_IF_INVALID = old_invalid
@@ -703,11 +734,15 @@ class Templates(unittest.TestCase):
             'cycle14': ("{% cycle one two as foo %}{% cycle foo %}", {'one': '1','two': '2'}, '12'),
             'cycle15': ("{% for i in test %}{% cycle aye bee %}{{ i }},{% endfor %}", {'test': range(5), 'aye': 'a', 'bee': 'b'}, 'a0,b1,a2,b3,a4,'),
             'cycle16': ("{% cycle one|lower two as foo %}{% cycle foo %}", {'one': 'A','two': '2'}, 'a2'),
-            'cycle17': ("{% cycle 'a' 'b' 'c' as abc silent %}{% cycle abc %}{% cycle abc %}{% cycle abc %}{% cycle abc %}", {}, "abca"),
+            'cycle17': ("{% cycle 'a' 'b' 'c' as abc silent %}{% cycle abc %}{% cycle abc %}{% cycle abc %}{% cycle abc %}", {}, ""),
             'cycle18': ("{% cycle 'a' 'b' 'c' as foo invalid_flag %}", {}, template.TemplateSyntaxError),
             'cycle19': ("{% cycle 'a' 'b' as silent %}{% cycle silent %}", {}, "ab"),
             'cycle20': ("{% cycle one two as foo %} &amp; {% cycle foo %}", {'one' : 'A & B', 'two' : 'C & D'}, "A & B &amp; C & D"),
             'cycle21': ("{% filter force_escape %}{% cycle one two as foo %} & {% cycle foo %}{% endfilter %}", {'one' : 'A & B', 'two' : 'C & D'}, "A &amp; B &amp; C &amp; D"),
+            'cycle22': ("{% for x in values %}{% cycle 'a' 'b' 'c' as abc silent %}{{ x }}{% endfor %}", {'values': [1,2,3,4]}, "1234"),
+            'cycle23': ("{% for x in values %}{% cycle 'a' 'b' 'c' as abc silent %}{{ abc }}{{ x }}{% endfor %}", {'values': [1,2,3,4]}, "a1b2c3a4"),
+            'included-cycle': ('{{ abc }}', {'abc': 'xxx'}, 'xxx'),
+            'cycle24': ("{% for x in values %}{% cycle 'a' 'b' 'c' as abc silent %}{% include 'included-cycle' %}{% endfor %}", {'values': [1,2,3,4]}, "abca"),
 
             ### EXCEPTIONS ############################################################
 
@@ -995,6 +1030,10 @@ class Templates(unittest.TestCase):
             'include11': ('{% include "basic-syntax03" only with second=2 %}', {'first': '1'}, (' --- 2', 'INVALID --- 2')),
             'include12': ('{% include "basic-syntax03" with first=1 only %}', {'second': '2'}, ('1 --- ', '1 --- INVALID')),
 
+            # autoescape context
+            'include13': ('{% autoescape off %}{% include "basic-syntax03" %}{% endautoescape %}', {'first': '&'}, ('& --- ', '& --- INVALID')),
+            'include14': ('{% autoescape off %}{% include "basic-syntax03" with first=var1 only %}{% endautoescape %}', {'var1': '&'}, ('& --- ', '& --- INVALID')),
+
             'include-error01': ('{% include "basic-syntax01" with %}', {}, template.TemplateSyntaxError),
             'include-error02': ('{% include "basic-syntax01" with "no key" %}', {}, template.TemplateSyntaxError),
             'include-error03': ('{% include "basic-syntax01" with dotted.arg="error" %}', {}, template.TemplateSyntaxError),
@@ -1244,6 +1283,9 @@ class Templates(unittest.TestCase):
             'i18n31': ('{% load i18n %}{% get_language_info_list for langcodes as langs %}{% for l in langs %}{{ l.code }}: {{ l.name }}/{{ l.name_local }} bidi={{ l.bidi }}; {% endfor %}', {'langcodes': (('sl', 'Slovenian'), ('fa', 'Persian'))}, u'sl: Slovenian/Sloven\u0161\u010dina bidi=False; fa: Persian/\u0641\u0627\u0631\u0633\u06cc bidi=True; '),
             'i18n32': ('{% load i18n %}{{ "hu"|language_name }} {{ "hu"|language_name_local }} {{ "hu"|language_bidi }}', {}, u'Hungarian Magyar False'),
             'i18n33': ('{% load i18n %}{{ langcode|language_name }} {{ langcode|language_name_local }} {{ langcode|language_bidi }}', {'langcode': 'nl'}, u'Dutch Nederlands False'),
+
+            # blocktrans handling of variables which are not in the context.
+            'i18n34': ('{% load i18n %}{% blocktrans %}{{ missing }}{% endblocktrans %}', {}, u''),
 
             ### HANDLING OF TEMPLATE_STRING_IF_INVALID ###################################
 
@@ -1596,6 +1638,35 @@ class TemplateTagLoading(unittest.TestCase):
         sys.path.append(egg_name)
         settings.INSTALLED_APPS = ('tagsegg',)
         t = template.Template(ttext)
+
+
+class RequestContextTests(BaseTemplateResponseTest):
+
+    def setUp(self):
+        templates = {
+            'child': Template('{{ var|default:"none" }}'),
+        }
+        setup_test_template_loader(templates)
+        self.fake_request = RequestFactory().get('/')
+
+    def tearDown(self):
+        restore_template_loaders()
+
+    def test_include_only(self):
+        """
+        Regression test for #15721, ``{% include %}`` and ``RequestContext``
+        not playing together nicely.
+        """
+        ctx = RequestContext(self.fake_request, {'var': 'parent'})
+        self.assertEqual(
+            template.Template('{% include "child" %}').render(ctx),
+            'parent'
+        )
+        self.assertEqual(
+            template.Template('{% include "child" only %}').render(ctx),
+            'none'
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

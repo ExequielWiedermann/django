@@ -42,6 +42,7 @@ LANGUAGE_CODE = 'en-us'
 # should be the utf-8 encoded local name for the language.
 LANGUAGES = (
     ('ar', gettext_noop('Arabic')),
+    ('az', gettext_noop('Azerbaijani')),
     ('bg', gettext_noop('Bulgarian')),
     ('bn', gettext_noop('Bengali')),
     ('bs', gettext_noop('Bosnian')),
@@ -56,6 +57,7 @@ LANGUAGES = (
     ('es', gettext_noop('Spanish')),
     ('es-ar', gettext_noop('Argentinian Spanish')),
     ('es-mx', gettext_noop('Mexican Spanish')),
+    ('es-ni', gettext_noop('Nicaraguan Spanish')),
     ('et', gettext_noop('Estonian')),
     ('eu', gettext_noop('Basque')),
     ('fa', gettext_noop('Persian')),
@@ -82,7 +84,6 @@ LANGUAGES = (
     ('ml', gettext_noop('Malayalam')),
     ('mn', gettext_noop('Mongolian')),
     ('nl', gettext_noop('Dutch')),
-    ('no', gettext_noop('Norwegian')),
     ('nb', gettext_noop('Norwegian Bokmal')),
     ('nn', gettext_noop('Norwegian Nynorsk')),
     ('pa', gettext_noop('Punjabi')),
@@ -102,6 +103,7 @@ LANGUAGES = (
     ('th', gettext_noop('Thai')),
     ('tr', gettext_noop('Turkish')),
     ('uk', gettext_noop('Ukrainian')),
+    ('ur', gettext_noop('Urdu')),
     ('vi', gettext_noop('Vietnamese')),
     ('zh-cn', gettext_noop('Simplified Chinese')),
     ('zh-tw', gettext_noop('Traditional Chinese')),
@@ -121,7 +123,7 @@ LANGUAGE_COOKIE_NAME = 'django_language'
 USE_L10N = False
 
 # Not-necessarily-technical managers of the site. They get broken link
-# notifications and other various e-mails.
+# notifications and other various emails.
 MANAGERS = ADMINS
 
 # Default content type and charset to use for all HttpResponse objects, if a
@@ -136,12 +138,12 @@ FILE_CHARSET = 'utf-8'
 # E-mail address that error messages come from.
 SERVER_EMAIL = 'root@localhost'
 
-# Whether to send broken-link e-mails.
+# Whether to send broken-link emails.
 SEND_BROKEN_LINK_EMAILS = False
 
 # Database connection info.
 # Legacy format
-DATABASE_ENGINE = ''           # 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+DATABASE_ENGINE = ''           # 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
 DATABASE_NAME = ''             # Or path to database file if using sqlite3.
 DATABASE_USER = ''             # Not used with sqlite3.
 DATABASE_PASSWORD = ''         # Not used with sqlite3.
@@ -162,10 +164,10 @@ DATABASE_ROUTERS = []
 # to a module that defines an EmailBackend class.
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
-# Host for sending e-mail.
+# Host for sending email.
 EMAIL_HOST = 'localhost'
 
-# Port for sending e-mail.
+# Port for sending email.
 EMAIL_PORT = 25
 
 # Optional SMTP authentication information for EMAIL_HOST.
@@ -204,7 +206,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 # Output to use in template system for invalid (e.g. misspelled) variables.
 TEMPLATE_STRING_IF_INVALID = ''
 
-# Default e-mail address to use for various automated correspondence from
+# Default email address to use for various automated correspondence from
 # the site managers.
 DEFAULT_FROM_EMAIL = 'webmaster@localhost'
 
@@ -459,17 +461,13 @@ COMMENTS_BANNED_USERS_GROUP = None
 # Set to None if you're not using it.
 COMMENTS_MODERATORS_GROUP = None
 
-# The group ID that designates the users whose comments should be e-mailed to MANAGERS.
+# The group ID that designates the users whose comments should be emailed to MANAGERS.
 # Set to None if you're not using it.
 COMMENTS_SKETCHY_USERS_GROUP = None
 
-# The system will e-mail MANAGERS the first COMMENTS_FIRST_FEW comments by each
+# The system will email MANAGERS the first COMMENTS_FIRST_FEW comments by each
 # user. Set this to 0 if you want to disable it.
 COMMENTS_FIRST_FEW = 0
-
-# A tuple of IP addresses that have been banned from participating in various
-# Django-powered features.
-BANNED_IPS = ()
 
 ##################
 # AUTHENTICATION #
@@ -503,7 +501,7 @@ CSRF_COOKIE_DOMAIN = None
 ############
 
 # Class to use as messges backend
-MESSAGE_STORAGE = 'django.contrib.messages.storage.user_messages.LegacyFallbackStorage'
+MESSAGE_STORAGE = 'django.contrib.messages.storage.fallback.FallbackStorage'
 
 # Default values of MESSAGE_LEVEL and MESSAGE_TAGS are defined within
 # django.contrib.messages to avoid imports in this settings file.
@@ -528,7 +526,7 @@ LOGGING = {
         }
     },
     'loggers': {
-        'django.request':{
+        'django.request': {
             'handlers': ['mail_admins'],
             'level': 'ERROR',
             'propagate': True,

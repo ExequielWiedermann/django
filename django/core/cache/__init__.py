@@ -80,7 +80,7 @@ if not settings.CACHES:
         import warnings
         warnings.warn(
             "settings.CACHE_* is deprecated; use settings.CACHES instead.",
-            PendingDeprecationWarning
+            DeprecationWarning
         )
     else:
         # The default cache setting is put here so that we
@@ -101,6 +101,8 @@ if not settings.CACHES:
     engine, host, params = parse_backend_uri(settings.CACHE_BACKEND)
     if engine in backend_classes:
         engine = 'django.core.cache.backends.%s' % backend_classes[engine]
+    else:
+        engine = '%s.CacheClass' % engine
     defaults = {
         'BACKEND': engine,
         'LOCATION': host,

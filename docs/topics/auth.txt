@@ -19,10 +19,6 @@ The auth system consists of:
       a certain task.
     * Groups: A generic way of applying labels and permissions to more than one
       user.
-    * Messages: A simple way to queue messages for given users.
-
-.. deprecated:: 1.2
-   The Messages component of the auth system will be removed in Django 1.4.
 
 Installation
 ============
@@ -84,7 +80,7 @@ Fields
 
     .. attribute:: models.User.email
 
-        Optional. E-mail address.
+        Optional. Email address.
 
     .. attribute:: models.User.password
 
@@ -256,14 +252,9 @@ Methods
         (the Django app label). If the user is inactive, this method will
         always return ``False``.
 
-    .. method:: models.User.get_and_delete_messages()
-
-        Returns a list of :class:`~django.contrib.auth.models.Message` objects
-        in the user's queue and deletes the messages from the queue.
-
     .. method:: models.User.email_user(subject, message, from_email=None)
 
-        Sends an e-mail to the user. If
+        Sends an email to the user. If
         :attr:`~django.contrib.auth.models.User.from_email` is ``None``, Django
         uses the :setting:`DEFAULT_FROM_EMAIL`.
 
@@ -615,6 +606,8 @@ Django provides two functions in :mod:`django.contrib.auth`:
 Manually checking a user's password
 -----------------------------------
 
+.. currentmodule:: django.contrib.auth.models
+
 .. function:: check_password()
 
     If you'd like to manually authenticate a user by comparing a plain-text
@@ -626,6 +619,8 @@ Manually checking a user's password
 
 How to log a user out
 ---------------------
+
+.. currentmodule:: django.contrib.auth
 
 .. function:: logout()
 
@@ -657,7 +652,7 @@ How to log a user out
 Login and logout signals
 ------------------------
 
-.. versionadded:: 1.3 
+.. versionadded:: 1.3
 
 The auth framework uses two :doc:`signals </topics/signals>` that can be used
 for notification when a user logs in or out.
@@ -871,11 +866,13 @@ The login_required decorator
 Other built-in views
 --------------------
 
+.. module:: django.contrib.auth.views
+
 In addition to the :func:`~views.login` view, the authentication system
 includes a few other useful built-in views located in
 :mod:`django.contrib.auth.views`:
 
-.. function:: views.logout(request, [next_page, template_name, redirect_field_name])
+.. function:: logout(request, [next_page, template_name, redirect_field_name])
 
     Logs a user out.
 
@@ -895,7 +892,7 @@ includes a few other useful built-in views located in
 
         * ``title``: The string "Logged out", localized.
 
-.. function:: views.logout_then_login(request[, login_url])
+.. function:: logout_then_login(request[, login_url])
 
     Logs a user out, then redirects to the login page.
 
@@ -904,7 +901,7 @@ includes a few other useful built-in views located in
         * ``login_url``: The URL of the login page to redirect to. This will
           default to :setting:`settings.LOGIN_URL <LOGIN_URL>` if not supplied.
 
-.. function:: views.password_change(request[, template_name, post_change_redirect, password_change_form])
+.. function:: password_change(request[, template_name, post_change_redirect, password_change_form])
 
     Allows a user to change their password.
 
@@ -928,7 +925,7 @@ includes a few other useful built-in views located in
 
         * ``form``: The password change form.
 
-.. function:: views.password_change_done(request[, template_name])
+.. function:: password_change_done(request[, template_name])
 
     The page shown after a user has changed their password.
 
@@ -938,11 +935,14 @@ includes a few other useful built-in views located in
           default to :file:`registration/password_change_done.html` if not
           supplied.
 
-.. function:: views.password_reset(request[, is_admin_site, template_name, email_template_name, password_reset_form, token_generator, post_reset_redirect, from_email])
+.. function:: password_reset(request[, is_admin_site, template_name, email_template_name, password_reset_form, token_generator, post_reset_redirect, from_email])
 
     Allows a user to reset their password by generating a one-time use link
     that can be used to reset the password, and sending that link to the
-    user's registered e-mail address.
+    user's registered email address.
+
+    .. versionchanged:: 1.3
+        The ``from_email`` argument was added.
 
     **Optional arguments:**
 
@@ -951,7 +951,7 @@ includes a few other useful built-in views located in
           :file:`registration/password_reset_form.html` if not supplied.
 
         * ``email_template_name``: The full name of a template to use for
-          generating the e-mail with the new password. This will default to
+          generating the email with the new password. This will default to
           :file:`registration/password_reset_email.html` if not supplied.
 
         * ``password_reset_form``: Form that will be used to set the password.
@@ -964,16 +964,14 @@ includes a few other useful built-in views located in
         * ``post_reset_redirect``: The URL to redirect to after a successful
           password change.
 
-        .. versionchanged:: 1.3
-
-        * ``from_email``: A valid e-mail address. By default Django uses
+        * ``from_email``: A valid email address. By default Django uses
           the :setting:`DEFAULT_FROM_EMAIL`.
 
     **Template context:**
 
         * ``form``: The form for resetting the user's password.
 
-.. function:: views.password_reset_done(request[, template_name])
+.. function:: password_reset_done(request[, template_name])
 
     The page shown after a user has reset their password.
 
@@ -983,7 +981,7 @@ includes a few other useful built-in views located in
           default to :file:`registration/password_reset_done.html` if not
           supplied.
 
-.. function:: views.redirect_to_login(next[, login_url, redirect_field_name])
+.. function:: redirect_to_login(next[, login_url, redirect_field_name])
 
     Redirects to the login page, and then back to another URL after a
     successful login.
@@ -1000,6 +998,7 @@ includes a few other useful built-in views located in
         * ``redirect_field_name``: The name of a ``GET`` field containing the
           URL to redirect to after log out. Overrides ``next`` if the given
           ``GET`` parameter is passed.
+
 
 .. function:: password_reset_confirm(request[, uidb36, token, template_name, token_generator, set_password_form, post_reset_redirect])
 
@@ -1053,7 +1052,7 @@ provides several built-in forms located in :mod:`django.contrib.auth.forms`:
 
 .. class:: PasswordResetForm
 
-    A form for generating and e-mailing a one-time use link to reset a
+    A form for generating and emailing a one-time use link to reset a
     user's password.
 
 .. class:: SetPasswordForm
@@ -1073,7 +1072,7 @@ provides several built-in forms located in :mod:`django.contrib.auth.forms`:
 Limiting access to logged-in users that pass a test
 ---------------------------------------------------
 
-.. currentmodule:: django.contrib.auth
+.. currentmodule:: django.contrib.auth.decorators
 
 To limit access based on certain permissions or some other test, you'd do
 essentially the same thing as described in the previous section.
@@ -1088,7 +1087,7 @@ checks to make sure the user is logged in and has the permission
             return HttpResponse("You can't vote in this poll.")
         # ...
 
-.. function:: decorators.user_passes_test()
+.. function:: user_passes_test()
 
     As a shortcut, you can use the convenient ``user_passes_test`` decorator::
 
@@ -1126,7 +1125,7 @@ checks to make sure the user is logged in and has the permission
 The permission_required decorator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. function:: decorators.permission_required()
+.. function:: permission_required()
 
     It's a relatively common task to check whether a user has a particular
     permission. For that reason, Django provides a shortcut for that case: the
@@ -1154,6 +1153,8 @@ The permission_required decorator
 
     As in the :func:`~decorators.login_required` decorator, ``login_url``
     defaults to :setting:`settings.LOGIN_URL <LOGIN_URL>`.
+
+.. currentmodule:: django.contrib.auth
 
 Limiting access to generic views
 --------------------------------
@@ -1249,7 +1250,9 @@ closing tasks.)
 API reference
 -------------
 
-.. class:: models.Permission
+.. currentmodule:: django.contrib.auth.models
+
+.. class:: Permission
 
     Just like users, permissions are implemented in a Django model that lives
     in `django/contrib/auth/models.py`_.
@@ -1262,16 +1265,16 @@ Fields
 :class:`~django.contrib.auth.models.Permission` objects have the following
 fields:
 
-.. attribute:: models.Permission.name
+.. attribute:: Permission.name
 
     Required. 50 characters or fewer. Example: ``'Can vote'``.
 
-.. attribute:: models.Permission.content_type
+.. attribute:: Permission.content_type
 
     Required. A reference to the ``django_content_type`` database table, which
     contains a record for each installed Django model.
 
-.. attribute:: models.Permission.codename
+.. attribute:: Permission.codename
 
     Required. 100 characters or fewer. Example: ``'can_vote'``.
 
@@ -1280,6 +1283,8 @@ Methods
 
 :class:`~django.contrib.auth.models.Permission` objects have the standard
 data-access methods like any other :doc:`Django model </ref/models/instances>`.
+
+.. currentmodule:: django.contrib.auth
 
 Authentication data in templates
 ================================
@@ -1320,8 +1325,12 @@ Permissions
 
 The currently logged-in user's permissions are stored in the template variable
 ``{{ perms }}``. This is an instance of
-:class:`django.core.context_processors.PermWrapper`, which is a
+:class:`django.contrib.auth.context_processors.PermWrapper`, which is a
 template-friendly proxy of permissions.
+
+.. versionchanged:: 1.3
+    Prior to version 1.3, ``PermWrapper`` was located in
+    ``django.contrib.auth.context_processors``.
 
 In the ``{{ perms }}`` object, single-attribute lookup is a proxy to
 :meth:`User.has_module_perms <django.contrib.auth.models.User.has_module_perms>`.
@@ -1366,72 +1375,8 @@ example, if the group ``Site editors`` has the permission
 Beyond permissions, groups are a convenient way to categorize users to give
 them some label, or extended functionality. For example, you could create a
 group ``'Special users'``, and you could write code that could, say, give them
-access to a members-only portion of your site, or send them members-only e-mail
+access to a members-only portion of your site, or send them members-only email
 messages.
-
-Messages
-========
-
-.. deprecated:: 1.2
-   This functionality will be removed in Django 1.4.  You should use the
-   :doc:`messages framework </ref/contrib/messages>` for all new projects and
-   begin to update your existing code immediately.
-
-The message system is a lightweight way to queue messages for given users.
-
-A message is associated with a :class:`~django.contrib.auth.models.User`.
-There's no concept of expiration or timestamps.
-
-Messages are used by the Django admin after successful actions. For example,
-``"The poll Foo was created successfully."`` is a message.
-
-The API is simple:
-
-.. method:: models.User.message_set.create(message)
-
-    To create a new message, use
-    ``user_obj.message_set.create(message='message_text')``.
-
-    To retrieve/delete messages, use
-    :meth:`user_obj.get_and_delete_messages() <django.contrib.auth.models.User.get_and_delete_messages>`,
-    which returns a list of ``Message`` objects in the user's queue (if any)
-    and deletes the messages from the queue.
-
-In this example view, the system saves a message for the user after creating
-a playlist::
-
-    def create_playlist(request, songs):
-        # Create the playlist with the given songs.
-        # ...
-        request.user.message_set.create(message="Your playlist was added successfully.")
-        return render_to_response("playlists/create.html",
-            context_instance=RequestContext(request))
-
-When you use :class:`~django.template.context.RequestContext`, the currently
-logged-in user and his/her messages are made available in the
-:doc:`template context </ref/templates/api>` as the template variable
-``{{ messages }}``. Here's an example of template code that displays messages:
-
-.. code-block:: html+django
-
-    {% if messages %}
-    <ul>
-        {% for message in messages %}
-        <li>{{ message }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
-
-.. versionchanged:: 1.2
-   The ``messages`` template variable uses a backwards compatible method in the
-   :doc:`messages framework </ref/contrib/messages>` to retrieve messages from
-   both the user ``Message`` model and from the new framework.  Unlike in
-   previous revisions, the messages will not be erased unless they are actually
-   displayed.
-
-Finally, note that this messages framework only works with users in the user
-database. To send messages to anonymous users, use the
-:doc:`messages framework </ref/contrib/messages>`.
 
 .. _authentication-backends:
 

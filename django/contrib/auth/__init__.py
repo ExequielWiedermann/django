@@ -14,26 +14,17 @@ def load_backend(path):
     try:
         mod = import_module(module)
     except ImportError, e:
-        raise ImproperlyConfigured('Error importing authentication backend %s: "%s"' % (module, e))
+        raise ImproperlyConfigured('Error importing authentication backend %s: "%s"' % (path, e))
     except ValueError, e:
         raise ImproperlyConfigured('Error importing authentication backends. Is AUTHENTICATION_BACKENDS a correctly defined list or tuple?')
     try:
         cls = getattr(mod, attr)
     except AttributeError:
         raise ImproperlyConfigured('Module "%s" does not define a "%s" authentication backend' % (module, attr))
-    if not hasattr(cls, "supports_object_permissions"):
-        warn("Authentication backends without a `supports_object_permissions` attribute are deprecated. Please define it in %s." % cls,
-             DeprecationWarning)
-        cls.supports_object_permissions = False
-
-    if not hasattr(cls, 'supports_anonymous_user'):
-        warn("Authentication backends without a `supports_anonymous_user` attribute are deprecated. Please define it in %s." % cls,
-             DeprecationWarning)
-        cls.supports_anonymous_user = False
 
     if not hasattr(cls, 'supports_inactive_user'):
         warn("Authentication backends without a `supports_inactive_user` attribute are deprecated. Please define it in %s." % cls,
-             PendingDeprecationWarning)
+             DeprecationWarning)
         cls.supports_inactive_user = False
     return cls()
 
